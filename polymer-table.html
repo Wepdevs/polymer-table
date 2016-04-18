@@ -9,15 +9,40 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 -->
 
 <link rel="import" href="../../bower_components/polymer/polymer.html">
-
+<link rel="import" href="../../iron-flex-layout/iron-flex-layout.html">
 <dom-module id="polymer-table">
   <template>
     <style>
       :host {
         display: block;
       }
+
+      .cell {width:64px;}
+      .header {@apply(--layout-horizontal);}
+      .row {@apply(--layout-horizontal);}
+      
     </style>
-    <div>Hello from <span>{{foo}}</span></div>
+  
+  <div class="header">
+    <template is="dom-repeat" items="[[getColumnsNames(data.0)]]">
+        <div class="cell header">
+         [[item]]
+        </div>    
+        </template>
+     </div>
+        <template is="dom-repeat" items="[[data]]" as="rowData">
+             <div class="row">  
+            <template is="dom-repeat" items="[[getRow(rowData)]]">
+              <div class="cell">
+                [[item]]
+              </div>
+            </template>
+            </div>
+        </template>
+      </div>
+
+   
+
   </template>
   <script>
   (function() {
@@ -25,13 +50,18 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
     Polymer({
       is: 'polymer-table',
+      getRow:function(r) {
+          return Object.keys(r).map(function(value, index) {
+            return r[value]
+          });
+
+      },
+      getColumnsNames:function(datum) {
+          return Object.keys(datum);
+      },
 
       properties: {
-        foo: {
-          type: String,
-          value: 'polymer-table',
-          notify: true
-        }
+        data:{value:[{a:1,b:2},{a:1,b:2}],type:Array}
       }
     });
   })();
