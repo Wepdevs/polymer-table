@@ -9,7 +9,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 -->
 
 <link rel="import" href="../../bower_components/polymer/polymer.html">
-<link rel="import" href="../../iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../../elements/polymer-table/polymer-table-row.html">
 <dom-module id="polymer-table">
   <template>
     <style>
@@ -17,51 +19,225 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         display: block;
       }
 
-      .cell {width:64px;}
-      .header {@apply(--layout-horizontal);}
-      .row {@apply(--layout-horizontal);}
-      
+      .headerText {
+        padding-left:4px;
+      }
+      .noselect {
+        -webkit-touch-callout: none; /* iOS Safari */
+        -webkit-user-select: none;   /* Chrome/Safari/Opera */
+        -khtml-user-select: none;    /* Konqueror */
+        -moz-user-select: none;      /* Firefox */
+        -ms-user-select: none;       /* Internet Explorer/Edge */
+        user-select: none;           /* Non-prefixed version, currently
+                                        not supported by any browser */
+      }
+      .table {
+        border:1px solid #CCCCCC;
+        border-radius:2px;
+      }
+      .footer {
+        @apply(--layout-horizontal);
+      }
+      .header {
+        letter-spacing: 1px;
+        @apply(--layout-horizontal);
+        background-color:#DADADA;
+        font-size:13px;
+        line-height: 24px;
+        font-weight:400;}
+      .header > div {
+        @apply(--layout-flex);
+        }
+      .tablebody {
+        font-weight:300;
+        font-size:13px;}
+      .tablebody > .row:nth-child(even) {
+        background-color:#EEEEEE;}
+
+      .cellHeader {
+        @apply(--layout-horizontal);
+        apply(--layout-center);
+      }
+      .cellHeaderRow {
+
+        max-width: 58px;
+        min-width: 58px;
+        @apply(--layout-horizontal);
+        apply(--layout-center);
+      }
+      .space {
+        @apply(--layout-flex);
+      }
+
+      .cellHeader > div > iron-icon {
+        opacity:0.2;
+        cursor:pointer;
+      }
+      .cellHeader > div > iron-icon:hover {
+        opacity:1;
+      }
+      .cellHeader > div > iron-icon[sorting] {
+        opacity:1;
+      }
+
+      .headerActions {
+
+      }
+      .iconSpace {
+        width:24px;
+      }
+      .rowIndex {
+        max-width:48px!important;
+        min-width:48px!important;
+            text-align: center;
+          }
+
+.headerTextRow {
+  text-align: center;
+  width:100%;
+}
+
     </style>
-  
+
+<div class="table noselect">
   <div class="header">
-    <template is="dom-repeat" items="[[getColumnsNames(data.0)]]">
-        <div class="cell header">
-         [[item]]
-        </div>    
+    <div class="cellHeaderRow">
+       <div class="headerTextRow">Row</div>
+    </div>
+    <template is="dom-repeat" items="[[columns]]">
+
+      <div class="cellHeader">
+         <div class="headerText">[[item]]</div>
+         <div class="space"></div>
+         <div><iron-icon icon="expand-more" column$="[[item]]" on-tap="sortUp"></iron-icon></div>
+         <div><iron-icon icon="expand-less" column$="[[item]]" on-tap="sortDown"></iron-icon></div>
+       </div>
+
         </template>
+        <template is="dom-if" restamp="true" if="[[showActions]]">
+        <div style="[[computeWidth(userActions.length)]]">
+        </div>
+      </template>
      </div>
-        <template is="dom-repeat" items="[[data]]" as="rowData">
-             <div class="row">  
-            <template is="dom-repeat" items="[[getRow(rowData)]]">
-              <div class="cell">
-                [[item]]
-              </div>
-            </template>
-            </div>
+     <div class="tablebody">
+        <template is="dom-repeat" sort="{{sortData(sortString,sortOrder)}}" items="[[paginateData(data,currentPage,pageLength,pagination)]]" as="rowData">
+            <polymer-table-row index="[[index]]" show-actions="[[showActions]]" data="[[rowData]]" actions="[[userActions]]" on-select="selectRow" columns="[[columns]]"></polymer-table-row>
         </template>
       </div>
+      </div>
+      <div class="footer">
+        <iron-icon icon="chevron-left" on-tap="pageDown"></iron-icon>
+          <input min="1" max="[[getMaxPage(pageLength)]]" value="{{currentPage::keyup}}" on-change="updatePage"></input>
+          <iron-icon icon="chevron-right" on-tap="pageUp"></iron-icon>
+        <div class="space"></div>
+        <div><input min="1" value="{{pageLength::keyup}}" on-change="updatePage"></input></div>
+      </div>
 
-   
-
-  </template>
+</template>
   <script>
   (function() {
     'use strict';
 
     Polymer({
+      computeWidth:function(e) {
+        return "max-width:"+(24*e)+"px!important"
+      },
       is: 'polymer-table',
-      getRow:function(r) {
-          return Object.keys(r).map(function(value, index) {
-            return r[value]
-          });
+      sortUp:function(s) {
+          this.set("sortOrder",1);
+          this.set("sortString",s.target.getAttribute("column"));
+          this.toggleAttribute("sorting",false,this.$$("iron-icon[sorting]"));
+          this.toggleAttribute("sorting",true,s.target);
 
       },
+      sortDown:function(s) {
+          this.set("sortOrder",-1);
+          this.set("sortString",s.target.getAttribute("column"));
+          this.toggleAttribute("sorting",false,this.$$("iron-icon[sorting]"));
+          this.toggleAttribute("sorting",true,s.target);
+      },
+
+      sortData:function(s) {
+        if (s) {
+          return function(a,b) {
+            return (this.sortOrder*(+a[this.sortString]-b[this.sortString]))
+          }.bind(this)
+        } else {return null}
+      },
+      pageUp:function() {
+          if (this.currentPage<this.getMaxPage()) {this.currentPage++;}
+      },
+      pageDown:function() {
+          if (this.currentPage>1) {this.currentPage--;}
+      },
+      getMaxPage:function () {
+        if (this.data) {return 1+Math.round(this.data.length/this.pageLength);}
+        return 0
+      },
+
+      updatePage:function(e) {
+        this.currentPage=e.target.value;
+      },
+
+      selectRow:function(e) {
+        var n = this.querySelector("polymer-table-row[selected]");
+        if (n) {n.selected=false;}
+        e.target.selected=true;
+        this.currentSelectedItem=e.model.item;
+      },
+
       getColumnsNames:function(datum) {
+          if (datum) {
           return Object.keys(datum);
+        }
+      },
+
+      disableSelection:function() {
+          var n=this.querySelector("polymer-table-row[selected]")
+          if (n) n.selected=false;
+      },
+
+      ready:function() {
+        var socket = io.connect('https://localhost:3000');
+          socket.on('news', function (data) {
+            this.set("data",data)
+          }.bind(this));
+        document.addEventListener("click",function(e) {
+          if (!Polymer.dom(e).rootTarget.classList.contains("polymer-table-row") && !Polymer.dom(e).rootTarget.classList.contains("polymer-table")) {
+            this.disableSelection();
+            this.currentSelectedItem=undefined
+          }
+        }.bind(this))
+      },
+
+      paginateData:function(data,page,pageLength,pagination) {
+          var paginatedData=[];
+          if (pagination) {
+              console.time("pagination");
+              var index = (page-1)*pageLength;
+              for (var o=index;o<(page)*pageLength;o++) {
+                  if (o<data.length){
+                  paginatedData.push(data[o])}
+              }
+              console.timeEnd("pagination");
+              return paginatedData
+          }
+          return data
       },
 
       properties: {
-        data:{value:[{a:1,b:2},{a:1,b:2}],type:Array}
+        showActions:{
+          value:true,
+        },
+        userActions:{value:[
+          {value:"delete",callback:"deletedRow",icon:"delete"}
+        ]},
+        currentPage:{value:1},
+        pagination:{value:true},
+        pageLength:{value:50},
+        columns:{computed:"getColumnsNames(data.0)"},
+        currentSelectedItem:{},
+        data:{value:[],type:Array}
       }
     });
   })();

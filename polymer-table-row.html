@@ -1,0 +1,98 @@
+<!--
+@license
+Copyright (c) 2015 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+<link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout.html">
+<dom-module id="polymer-table-row">
+  <template>
+    <style>
+
+      .row:hover{
+        background-color:var(--highlight-color);
+      }
+
+      .row {
+        cursor:pointer;
+        width:100%;
+        display: block;
+        @apply(--layout-horizontal);
+      }
+
+      .actions {
+
+      }
+      .row[selected] {background-color:var(--selected-color);}
+
+      :host {
+        --highlight-color:#EAEAEA;
+        --selected-color:#fe8284
+
+      }
+      .rowIndex {
+        max-width:48px!important;
+        min-width:48px!important;
+        text-align: center!important;
+        font-weight: bold;
+      }
+      .actions > iron-icon {
+        color:grey;
+      }
+      .actions > iron-icon:hover {
+        color:var(--selected-color);
+      }
+     .cell {min-width:64px;text-align:right;padding:4px;@apply(--layout-flex);border:1px solid #EAEAEA}
+    </style>
+    <div class="row" selected$=[[selected]]>
+      <div class="cell rowIndex">[[index]]</div>
+    <template is="dom-repeat" items="[[rowData]]">
+      <div class="cell">[[item]]</div>
+    </template>
+      <template restamp="true" is="dom-if" if="[[showActions]]">
+    <div class="actions">
+      <template is="dom-repeat" items="[[actions]]" as="action">
+      <iron-icon icon="[[action.icon]]" on-tap="actionTap"></iron-icon>
+    </template>
+    </div>
+  </template>
+  </div>
+  </template>
+  <script>
+  (function() {
+    'use strict';
+
+    Polymer({
+      actionTap:function(e) {
+        e.stopPropagation();
+        this.fire("action-tap",e.model.action)
+      },
+      is: 'polymer-table-row',
+      listeners:{"tap":"tap"},
+
+      tap:function(e) {
+          this.fire("select")
+          },
+
+      dataChanged:function() {
+        this.async(function() {
+          if(this.data && this.columns) {
+            this.rowData=this.columns.map(function(key) {return this.data[key]}.bind(this))
+          }
+        }.bind(this))
+      },
+      properties: {
+        index:{},
+        data:{observer:"dataChanged"},
+        columns:{},
+        rowData:{value:[]},
+        selected:{reflectToAttribute:true}
+
+      }
+    });
+  })();
+  </script>
+</dom-module>
