@@ -19,6 +19,17 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         display: block;
       }
 
+      .pageCounter {
+        background-color:transparent;
+        width:24px;
+        border:none;
+        text-align:right;
+        font-size:13px;
+        vertical-align: middle;
+        line-height:24px;
+        font-weight:600;
+      }
+
       .headerText {
         padding-left:4px;
       }
@@ -34,9 +45,11 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       .table {
         border:1px solid #CCCCCC;
         border-radius:2px;
+                margin-bottom:8px;
       }
       .footer {
         @apply(--layout-horizontal);
+        margin-bottom:8px;
       }
       .header {
         letter-spacing: 1px;
@@ -83,6 +96,22 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       .headerActions {
 
       }
+      .infos {
+        @apply(--layout-horizontal);
+        font-size:13px;
+        line-height:24px;
+        color:grey;
+      }
+
+      .infos > div {
+        margin-left:4px;
+        margin-right:4px;
+      }
+
+      .infos > .number {
+        color:black;
+      }
+
       .iconSpace {
         width:24px;
       }
@@ -92,11 +121,25 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
             text-align: center;
           }
 
-.headerTextRow {
-  text-align: center;
-  width:100%;
-}
+          .headerTextRow {
+            text-align: center;
+            width:100%;
+          }
+          .cellHeader {cursor:pointer;}
 
+          .pageSelection {
+            cursor:pointer;
+            background-color:transparent;
+            width:24px;
+            border:none;
+            text-align:right;
+            font-size:13px;
+            vertical-align: middle;
+            line-height:24px;
+            font-weight:600;
+          }
+          .pageSelection[selected] {color:green}
+          .pageSelection:hover {color:green}
     </style>
 
 <div class="table noselect">
@@ -105,8 +148,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
        <div class="headerTextRow">Row</div>
     </div>
     <template is="dom-repeat" items="[[columns]]">
-
-      <div class="cellHeader">
+      <div class="cellHeader" column$="[[index]]" on-tap="columnSelection">
          <div class="headerText">[[item]]</div>
          <div class="space"></div>
          <div><iron-icon icon="expand-more" column$="[[item]]" on-tap="sortUp"></iron-icon></div>
@@ -120,30 +162,69 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       </template>
      </div>
      <div class="tablebody">
-        <template is="dom-repeat" sort="{{sortData(sortString,sortOrder)}}" items="[[paginateData(data,currentPage,pageLength,pagination)]]" as="rowData">
-            <polymer-table-row index="[[index]]" show-actions="[[showActions]]" data="[[rowData]]" actions="[[userActions]]" on-select="selectRow" columns="[[columns]]"></polymer-table-row>
+        <template is="dom-repeat" delay="50" sort="{{sortData(sortString,sortOrder)}}" items="[[paginatedData]]" as="rowData">
+            <polymer-table-row on-cell-selection-clear="clearSelections" index="[[getIndex(index,currentPage,pageLength)]]" show-actions="[[showActions]]" data="[[rowData]]" actions="[[userActions]]" on-action-tap="doRowAction" on-select="selectRow" columns="[[columns]]"></polymer-table-row>
         </template>
       </div>
       </div>
-      <div class="footer">
+      <template is="dom-if" if="[[showFooter]]" restamp=true>
+       <div class="footer noselect">
         <iron-icon icon="chevron-left" on-tap="pageDown"></iron-icon>
-          <input min="1" max="[[getMaxPage(pageLength)]]" value="{{currentPage::keyup}}" on-change="updatePage"></input>
+          <div class="pageCounter">[[currentPage]]</div>
           <iron-icon icon="chevron-right" on-tap="pageUp"></iron-icon>
+          <div class="infos">
+            <div>Showing from</div><div class="number">[[firstShowing(currentPage,pageLength)]]</div><div>to</div><div class="number">[[lastShowing(currentPage,pageLength,paginatedData)]]</div>
+          </div>
         <div class="space"></div>
-        <div><input min="1" value="{{pageLength::keyup}}" on-change="updatePage"></input></div>
+        <div class="pageSelection" selected on-tap="updatePageLength" value="10">10</div>
+        <div class="pageSelection" on-tap="updatePageLength" value="25">25</div>
       </div>
-
+    </template>
 </template>
   <script>
   (function() {
     'use strict';
 
     Polymer({
+      getIndex:function(index,currentPage,pageLength) {
+        return (+index+1)+(pageLength*(currentPage-1))
+      },
+      updatePageLength:function(e) {
+        this.toggleAttribute("selected",false,this.$$(".pageSelection[selected]"));
+        this.toggleAttribute("selected",true,e.target);
+        this.set("pageLength",+e.target.getAttribute("value"));
+        this.set("currentPage",1)
+      },
+      firstShowing:function(currentPage,pageLength) {
+        return 1+(currentPage-1)*pageLength
+      },
+      lastShowing:function(currentPage,pageLength) {
+        if (this.paginatedData && pageLength>this.paginatedData.length) return this.paginatedData.length
+        return (currentPage)*pageLength
+      },
+      deleteRow:function(e) {
+        this.arrayDelete("data",e.model.rowData);
+        this.notifyPath("data",this.data.slice());
+      },
+      doRowAction:function(e) {
+          this[e.detail.action.callback](e);
+      },
+      clearSelections:function(e) {
+        Array.from(this.querySelectorAll("polymer-table-row")).map(x=>{
+          x.clearSelection();
+        })
+      },
+      columnSelection:function(e) {
+        if (this.columnSelectable) Array.from(this.querySelectorAll("polymer-table-row")).map(x=>{
+          x.selectColumn(e.currentTarget.getAttribute("column"),(this.pageLength>=this.paginatedData.length) ? this.paginatedData.length : this.pageLength);
+        })
+      },
       computeWidth:function(e) {
         return "max-width:"+(24*e)+"px!important"
       },
       is: 'polymer-table',
       sortUp:function(s) {
+          s.stopPropagation();
           this.set("sortOrder",1);
           this.set("sortString",s.target.getAttribute("column"));
           this.toggleAttribute("sorting",false,this.$$("iron-icon[sorting]"));
@@ -151,6 +232,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
       },
       sortDown:function(s) {
+          s.stopPropagation();
           this.set("sortOrder",-1);
           this.set("sortString",s.target.getAttribute("column"));
           this.toggleAttribute("sorting",false,this.$$("iron-icon[sorting]"));
@@ -165,7 +247,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         } else {return null}
       },
       pageUp:function() {
-          if (this.currentPage<this.getMaxPage()) {this.currentPage++;}
+          if ((this.currentPage+1)<this.getMaxPage()) {this.currentPage++;}
       },
       pageDown:function() {
           if (this.currentPage>1) {this.currentPage--;}
@@ -174,7 +256,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         if (this.data) {return 1+Math.round(this.data.length/this.pageLength);}
         return 0
       },
-
+      //deprecated
       updatePage:function(e) {
         this.currentPage=e.target.value;
       },
@@ -200,38 +282,44 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       ready:function() {
         var socket = io.connect('https://localhost:3000');
           socket.on('news', function (data) {
-            this.set("data",data)
+            this.set("data",data);
           }.bind(this));
         document.addEventListener("click",function(e) {
           if (!Polymer.dom(e).rootTarget.classList.contains("polymer-table-row") && !Polymer.dom(e).rootTarget.classList.contains("polymer-table")) {
             this.disableSelection();
             this.currentSelectedItem=undefined
           }
-        }.bind(this))
+        }.bind(this));
+
       },
 
       paginateData:function(data,page,pageLength,pagination) {
           var paginatedData=[];
           if (pagination) {
-              console.time("pagination");
+              //console.time("pagination");
               var index = (page-1)*pageLength;
               for (var o=index;o<(page)*pageLength;o++) {
                   if (o<data.length){
                   paginatedData.push(data[o])}
               }
-              console.timeEnd("pagination");
+              //console.timeEnd("pagination");
               return paginatedData
           }
           return data
       },
-
+      exportData:function() {
+        console.log(this.paginateData(this.data,this.currentPage,this.pageLength,this.pagination))
+      },
       properties: {
         showActions:{
           value:true,
         },
         userActions:{value:[
-          {value:"delete",callback:"deletedRow",icon:"delete"}
+          {value:"delete",callback:"deleteRow",icon:"delete"}
         ]},
+        showFooter:{value:true},
+        paginatedData:{computed:"paginateData(data,currentPage,pageLength,pagination)"},
+        columnSelectable:{value:true},
         currentPage:{value:1},
         pagination:{value:true},
         pageLength:{value:50},

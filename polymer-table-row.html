@@ -8,6 +8,7 @@ Code distributed by Google as part of the polymer project is also
 subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
 -->
 <link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="custom-renderer.html">
 <dom-module id="polymer-table-row">
   <template>
     <style>
@@ -24,7 +25,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       }
 
       .actions {
-
+        border:1px solid #EAEAEA;
       }
       .row[selected] {background-color:var(--selected-color);}
 
@@ -41,21 +42,43 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       }
       .actions > iron-icon {
         color:grey;
+        opacity:0.40
       }
       .actions > iron-icon:hover {
         color:var(--selected-color);
+        opacity:1;
+      }
+      .cell[selected] {
+        border:1px solid var(--selected-color);
+      }
+      .cell[selectedcolumn] {
+        border-left:1px solid red;
+        border-right:1px solid red;
+      }
+      .cell[selectedcolumnTop] {
+        border-left:1px solid red;
+        border-right:1px solid red;
+        border-top:1px solid red;
+      }
+      .cell[selectedcolumnBottom] {
+        border-left:1px solid red;
+        border-right:1px solid red;
+        border-bottom:1px solid red;
       }
      .cell {min-width:64px;text-align:right;padding:4px;@apply(--layout-flex);border:1px solid #EAEAEA}
     </style>
     <div class="row" selected$=[[selected]]>
-      <div class="cell rowIndex">[[index]]</div>
+      <div class="cell rowIndex" id="rowIndex" on-tap="tap">[[index]]</div>
     <template is="dom-repeat" items="[[rowData]]">
-      <div class="cell">[[item]]</div>
+      <template is="dom-if" if="[[isCustom(index)]]">
+        <custom-renderer render-as="[[getCustomRenderer(index)]]" data="[[item]]"></custom-renderer>
+      </template>
+        <div hidden$="[[isCustom(index)]]" class="cell" column$="[[index]]" on-tap="tapCell">3</div>
     </template>
       <template restamp="true" is="dom-if" if="[[showActions]]">
     <div class="actions">
       <template is="dom-repeat" items="[[actions]]" as="action">
-      <iron-icon icon="[[action.icon]]" on-tap="actionTap"></iron-icon>
+        <iron-icon icon="[[action.icon]]" on-tap="actionTap"></iron-icon>
     </template>
     </div>
   </template>
@@ -66,13 +89,48 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     'use strict';
 
     Polymer({
+      getCustomRenderer:function(index) {
+        return this.customRenderers[index]
+      },
+      isCustom:function(index) {
+        if (this.customRenderers[index]) {
+        return this.customRenderers[index]!="";}
+        return false
+      },
+      getIndex:function(index) {
+        return +index+1
+      },
+      selectColumn:function(c,pageLength) {
+          var att="selectedcolumn"
+          if (this.index==0) {
+            att="selectedcolumnTop"
+          }
+          if (this.index==pageLength-1) {
+            att="selectedcolumnBottom"
+          }
+
+          this.toggleAttribute(att,false,this.querySelector(".cell["+att+"]"));
+          var n = this.querySelector(".cell[column='"+c+"']")
+          this.toggleAttribute(att,true,n);
+      },
+      clearSelection:function() {
+          Array.from(this.querySelectorAll(".cell[selected]")).map(x=>{
+            this.toggleAttribute("selected",false,x);
+          })
+      },
+      tapCell:function(e) {
+        //this.toggleAttribute("selected",false,this.toggleAttribute("selected",false,this.$$(".cell[selected]")));
+        this.fire("cell-selection-clear",{});
+        this.clearSelection();
+        this.toggleAttribute("selected",true,e.target);
+        e.stopPropagation();
+        this.fire("cell-selection",{});
+      },
       actionTap:function(e) {
         e.stopPropagation();
-        this.fire("action-tap",e.model.action)
+        this.fire("action-tap",{action:e.model.action,item:e.model.item})
       },
       is: 'polymer-table-row',
-      listeners:{"tap":"tap"},
-
       tap:function(e) {
           this.fire("select")
           },
@@ -85,6 +143,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         }.bind(this))
       },
       properties: {
+        customRenderers:{value:{"2":"sparkline-chart"}},
         index:{},
         data:{observer:"dataChanged"},
         columns:{},
