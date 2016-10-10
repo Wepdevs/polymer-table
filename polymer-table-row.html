@@ -28,7 +28,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         border:1px solid #EAEAEA;
       }
       .row[selected] {background-color:var(--selected-color);}
-
+      .row[selected] > .cell {border:1 px solid transparent;}
       :host {
         --highlight-color:#EAEAEA;
         --selected-color:#fe8284
@@ -65,15 +65,19 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         border-right:1px solid red;
         border-bottom:1px solid red;
       }
-     .cell {min-width:64px;text-align:right;padding:4px;@apply(--layout-flex);border:1px solid #EAEAEA}
+     .cell {line-height:22px;min-height:22px;min-width:64px;text-align:right;padding:4px;@apply(--layout-flex);border:1px solid #EAEAEA}
     </style>
     <div class="row" selected$=[[selected]]>
+      <template is="dom-if" if="[[showRowIndex]]">
       <div class="cell rowIndex" id="rowIndex" on-tap="tap">[[index]]</div>
+    </template>
     <template is="dom-repeat" items="[[rowData]]">
       <template is="dom-if" if="[[isCustom(index)]]">
+        <div class="cell">
         <custom-renderer render-as="[[getCustomRenderer(index)]]" data="[[item]]"></custom-renderer>
+      </div>
       </template>
-        <div hidden$="[[isCustom(index)]]" class="cell" column$="[[index]]" on-tap="tapCell">3</div>
+        <div hidden="[[isCustom(index)]]" class="cell" column$="[[index]]" on-tap="tapCell">[[item]]</div>
     </template>
       <template restamp="true" is="dom-if" if="[[showActions]]">
     <div class="actions">
@@ -90,7 +94,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
     Polymer({
       getCustomRenderer:function(index) {
-        return this.customRenderers[index]
+        var c = this.customRenderers[index];
+        return c;
       },
       isCustom:function(index) {
         if (this.customRenderers[index]) {
@@ -102,10 +107,10 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       },
       selectColumn:function(c,pageLength) {
           var att="selectedcolumn"
-          if (this.index==0) {
+          if (this.index==1) {
             att="selectedcolumnTop"
           }
-          if (this.index==pageLength-1) {
+          if (this.index==pageLength) {
             att="selectedcolumnBottom"
           }
 
@@ -143,7 +148,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         }.bind(this))
       },
       properties: {
-        customRenderers:{value:{"2":"sparkline-chart"}},
+        showRowIndex:{value:false},
+        customRenderers:{value:{"2":"sparkline-charts","3":"left-aligned-label"}},
         index:{},
         data:{observer:"dataChanged"},
         columns:{},

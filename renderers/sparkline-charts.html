@@ -7,36 +7,21 @@ The complete set of contributors may be found at http://polymer.github.io/CONTRI
 Code distributed by Google as part of the polymer project is also
 subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
 -->
-<dom-module id="custom-renderer">
+<dom-module id="sparkline-charts">
   <template>
     <style>
 
     </style>
-
+    <div>sss</div>
   </template>
   <script>
   (function() {
     'use strict';
 
     Polymer({
-      ready:function() {
-
-      },
-      rendererChanged:function(e) {
-        if (typeof e === 'string') {
-            var resolvedPageUrl = this.resolveUrl("renderers/"+e + '.html');
-            this.importHref(resolvedPageUrl, null, this._showPage404, true);
-            var p = document.createElement(e);
-            console.log(this.data);
-            p.data=this.data;
-            this.appendChild(p);
-
-        }
-      },
-      is:"custom-renderer",
+      is:"sparkline-charts",
       properties: {
-        renderAs:{value:{},observer:"rendererChanged"},
-        data:{}
+
 
       }
     });

@@ -144,9 +144,11 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
 <div class="table noselect">
   <div class="header">
-    <div class="cellHeaderRow">
-       <div class="headerTextRow">Row</div>
+    <template is="dom-if" if="[[showRowIndex]]">
+    <div class="cellHeaderRow" >
+       <div class="headerTextRow">#</div>
     </div>
+    </template>
     <template is="dom-repeat" items="[[columns]]">
       <div class="cellHeader" column$="[[index]]" on-tap="columnSelection">
          <div class="headerText">[[item]]</div>
@@ -163,7 +165,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
      </div>
      <div class="tablebody">
         <template is="dom-repeat" delay="50" sort="{{sortData(sortString,sortOrder)}}" items="[[paginatedData]]" as="rowData">
-            <polymer-table-row on-cell-selection-clear="clearSelections" index="[[getIndex(index,currentPage,pageLength)]]" show-actions="[[showActions]]" data="[[rowData]]" actions="[[userActions]]" on-action-tap="doRowAction" on-select="selectRow" columns="[[columns]]"></polymer-table-row>
+            <polymer-table-row on-cell-selection-clear="clearSelections" index="[[getIndex(index,currentPage,pageLength)]]" show-row-index="[[showRowIndex]]" show-actions="[[showActions]]" data="[[rowData]]" actions="[[userActions]]" on-action-tap="doRowAction" on-select="selectRow" columns="[[columns]]"></polymer-table-row>
         </template>
       </div>
       </div>
@@ -313,6 +315,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       properties: {
         showActions:{
           value:true,
+        },
+        showRowIndex:{
+          value:true
         },
         userActions:{value:[
           {value:"delete",callback:"deleteRow",icon:"delete"}
