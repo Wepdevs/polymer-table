@@ -31,7 +31,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       }
 
       .headerText {
-        padding-left:4px;
+        margin-left: 4px;
       }
       .noselect {
         -webkit-touch-callout: none; /* iOS Safari */
@@ -50,6 +50,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       .footer {
         @apply(--layout-horizontal);
         margin-bottom:8px;
+
       }
       .header {
         letter-spacing: 1px;
@@ -59,7 +60,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         line-height: 24px;
         font-weight:400;}
       .header > div {
-        @apply(--layout-flex);
+
         }
       .tablebody {
         font-weight:300;
@@ -70,11 +71,13 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       .cellHeader {
         @apply(--layout-horizontal);
         apply(--layout-center);
+        border:1px solid transparent;
+        cursor:pointer;
       }
       .cellHeaderRow {
-
-        max-width: 58px;
-        min-width: 58px;
+        border:1px solid transparent;
+        max-width: 48px;
+        min-width: 48px;
         @apply(--layout-horizontal);
         apply(--layout-center);
       }
@@ -94,7 +97,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       }
 
       .headerActions {
-
+          border:1px solid transparent;
       }
       .infos {
         @apply(--layout-horizontal);
@@ -125,7 +128,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
             text-align: center;
             width:100%;
           }
-          .cellHeader {cursor:pointer;}
+
 
           .pageSelection {
             cursor:pointer;
@@ -138,6 +141,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
             line-height:24px;
             font-weight:600;
           }
+          .cellFlex {@apply(--layout-flex)}
           .pageSelection[selected] {color:green}
           .pageSelection:hover {color:green}
     </style>
@@ -150,16 +154,18 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     </div>
     </template>
     <template is="dom-repeat" items="[[columns]]">
-      <div class="cellHeader" column$="[[index]]" on-tap="columnSelection">
-         <div class="headerText">[[item]]</div>
+      <div class$="[[computeClass(item.flex)]]" style$="[[computeStyle(item.width)]]" column$="[[index]]" on-tap="columnSelection">
+         <div class="headerText">[[item.name]]</div>
          <div class="space"></div>
-         <div><iron-icon icon="expand-more" column$="[[item]]" on-tap="sortUp"></iron-icon></div>
-         <div><iron-icon icon="expand-less" column$="[[item]]" on-tap="sortDown"></iron-icon></div>
+         <template is="dom-if" if="[[item.sortable]]">
+         <div><iron-icon icon="expand-more" column$="[[item.key]]" on-tap="sortUp"></iron-icon></div>
+         <div><iron-icon icon="expand-less" column$="[[item.key]]" on-tap="sortDown"></iron-icon></div>
+       </template>
        </div>
 
         </template>
-        <template is="dom-if" restamp="true" if="[[showActions]]">
-        <div style="[[computeWidth(userActions.length)]]">
+        <template is="dom-if" restamp=true if="[[showActions]]">
+          <div class="headerActions" style$="[[computeActionsWidth(userActions.length)]]">
         </div>
       </template>
      </div>
@@ -188,6 +194,31 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     'use strict';
 
     Polymer({
+      computeClass:function(flex) {
+          if (flex) {return "cellHeader cellFlex"}
+          else {return "cellHeader"}
+      },
+      computeStyle:function(width) {
+          if (width) {return "width:"+width+"px!important"}
+      },
+      mapColumns:function() {
+        Array.from(this.columnNodes).map(q=> {
+            var key=q.getAttribute("key");
+            var name=q.getAttribute("name");
+            var sortable=q.hasAttribute("sortable")
+            var renderAs=q.getAttribute("render-as")
+            var width=q.getAttribute("width")
+            var flex=q.hasAttribute("flex")
+            var column={flex:flex,key:key,name:name,sortable:sortable,renderAs:renderAs,width:width}
+            this.push("columns",column);
+        });
+      },
+      attached:function() {
+            console.log("attached");
+            this.data=[{a:3,b:7},{a:3,f:5,b:2},{a:3,f:5,b:2},{a:3,f:5,b:2}]
+            this.columnNodes=Polymer.dom(this).children
+            this.mapColumns();
+      },
       getIndex:function(index,currentPage,pageLength) {
         return (+index+1)+(pageLength*(currentPage-1))
       },
@@ -205,11 +236,13 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         return (currentPage)*pageLength
       },
       deleteRow:function(e) {
-        this.arrayDelete("data",e.model.rowData);
-        this.notifyPath("data",this.data.slice());
+        //console.log(e.model);
+        //this.arrayDelete("data",e.model.rowData);
+        //this.notifyPath("data",this.data.slice());
       },
       doRowAction:function(e) {
-          this[e.detail.action.callback](e);
+          this.fire(e.detail.action.value,e.model.rowData);
+
       },
       clearSelections:function(e) {
         Array.from(this.querySelectorAll("polymer-table-row")).map(x=>{
@@ -221,8 +254,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           x.selectColumn(e.currentTarget.getAttribute("column"),(this.pageLength>=this.paginatedData.length) ? this.paginatedData.length : this.pageLength);
         })
       },
-      computeWidth:function(e) {
-        return "max-width:"+(24*e)+"px!important"
+      computeActionsWidth:function(e) {
+        var w=(24*e)+"px";
+        return "min-width:"+w+";max-width:"+w;
       },
       is: 'polymer-table',
       sortUp:function(s) {
@@ -270,22 +304,17 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         this.currentSelectedItem=e.model.item;
       },
 
-      getColumnsNames:function(datum) {
-          if (datum) {
-          return Object.keys(datum);
-        }
-      },
-
       disableSelection:function() {
           var n=this.querySelector("polymer-table-row[selected]")
           if (n) n.selected=false;
       },
-
       ready:function() {
-        var socket = io.connect('https://localhost:3000');
+        console.log("ready");
+        /*var socket = io.connect('https://localhost:3000');
           socket.on('news', function (data) {
             this.set("data",data);
-          }.bind(this));
+          }.bind(this));*/
+
         document.addEventListener("click",function(e) {
           if (!Polymer.dom(e).rootTarget.classList.contains("polymer-table-row") && !Polymer.dom(e).rootTarget.classList.contains("polymer-table")) {
             this.disableSelection();
@@ -295,7 +324,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
       },
 
-      paginateData:function(data,page,pageLength,pagination) {
+      paginateData:function(data,columns,page,pageLength,pagination) {
           var paginatedData=[];
           if (pagination) {
               //console.time("pagination");
@@ -320,15 +349,16 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           value:true
         },
         userActions:{value:[
-          {value:"delete",callback:"deleteRow",icon:"delete"}
+          //{value:"delete",callback:"deleteRow",icon:"delete"},
+          {value:"share",callback:"deleteRow",icon:"block"}
         ]},
         showFooter:{value:true},
-        paginatedData:{computed:"paginateData(data,currentPage,pageLength,pagination)"},
+        paginatedData:{computed:"paginateData(data,columns,currentPage,pageLength,pagination)"},
         columnSelectable:{value:true},
         currentPage:{value:1},
         pagination:{value:true},
         pageLength:{value:50},
-        columns:{computed:"getColumnsNames(data.0)"},
+        columns:{value:[]},
         currentSelectedItem:{},
         data:{value:[],type:Array}
       }

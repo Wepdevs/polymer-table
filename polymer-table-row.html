@@ -19,7 +19,6 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
       .row {
         cursor:pointer;
-        width:100%;
         display: block;
         @apply(--layout-horizontal);
       }
@@ -34,6 +33,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         --selected-color:#fe8284
 
       }
+      .cellFlex {@apply(--layout-flex);}
       .rowIndex {
         max-width:48px!important;
         min-width:48px!important;
@@ -65,19 +65,20 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         border-right:1px solid red;
         border-bottom:1px solid red;
       }
-     .cell {line-height:22px;min-height:22px;min-width:64px;text-align:right;padding:4px;@apply(--layout-flex);border:1px solid #EAEAEA}
+
+     .cell {line-height:22px;min-height:22px;text-align:right;border:1px solid #EAEAEA}
     </style>
     <div class="row" selected$=[[selected]]>
       <template is="dom-if" if="[[showRowIndex]]">
       <div class="cell rowIndex" id="rowIndex" on-tap="tap">[[index]]</div>
     </template>
-    <template is="dom-repeat" items="[[rowData]]">
-      <template is="dom-if" if="[[isCustom(index)]]">
-        <div class="cell">
-        <custom-renderer render-as="[[getCustomRenderer(index)]]" data="[[item]]"></custom-renderer>
+    <template is="dom-repeat" items="[[columns]]">
+      <template is="dom-if" if="[[isCustom(item.renderAs)]]">
+        <div class$="[[computeClass(item.flex)]]" style$="[[computeStyle(item.width)]]">
+        <custom-renderer render-as="[[item.renderAs]]" data="[[getValue(data,item.key)]]"></custom-renderer>
       </div>
       </template>
-        <div hidden="[[isCustom(index)]]" class="cell" column$="[[index]]" on-tap="tapCell">[[item]]</div>
+        <div style$="[[computeStyle(item.width)]]" hidden="[[isCustom(item.renderAs)]]" class$="[[computeClass(item.flex)]]" column$="[[item.key]]" on-tap="tapCell"><span style="padding-right:4px;">[[getValue(data,item.key)]]</span></div>
     </template>
       <template restamp="true" is="dom-if" if="[[showActions]]">
     <div class="actions">
@@ -93,14 +94,22 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     'use strict';
 
     Polymer({
+      computeClass:function(flex) {
+          if (flex) {return "cell cellFlex"}
+          else {return "cell"}
+      },
+      computeStyle:function(width) {
+          if (width) {return "width:"+width+"px!important"}
+      },
+      getValue:function(data,key) {
+          return data[key]
+      },
       getCustomRenderer:function(index) {
         var c = this.customRenderers[index];
         return c;
       },
-      isCustom:function(index) {
-        if (this.customRenderers[index]) {
-        return this.customRenderers[index]!="";}
-        return false
+      isCustom:function(renderAs) {
+          return renderAs!=null
       },
       getIndex:function(index) {
         return +index+1
@@ -141,19 +150,13 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           },
 
       dataChanged:function() {
-        this.async(function() {
-          if(this.data && this.columns) {
-            this.rowData=this.columns.map(function(key) {return this.data[key]}.bind(this))
-          }
-        }.bind(this))
+
       },
       properties: {
         showRowIndex:{value:false},
-        customRenderers:{value:{"2":"sparkline-charts","3":"left-aligned-label"}},
         index:{},
         data:{observer:"dataChanged"},
         columns:{},
-        rowData:{value:[]},
         selected:{reflectToAttribute:true}
 
       }

@@ -27,16 +27,18 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
             var resolvedPageUrl = this.resolveUrl("renderers/"+e + '.html');
             this.importHref(resolvedPageUrl, null, this._showPage404, true);
             var p = document.createElement(e);
-            console.log(this.data);
-            p.data=this.data;
             this.appendChild(p);
+            this.child=p;
 
         }
+      },
+      dataChanged:function(e) {
+        if (this.child) {this.child.data=e;}
       },
       is:"custom-renderer",
       properties: {
         renderAs:{value:{},observer:"rendererChanged"},
-        data:{}
+        data:{observer:"dataChanged"}
 
       }
     });
