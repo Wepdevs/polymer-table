@@ -9,12 +9,17 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 -->
 <link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout.html">
 <link rel="import" href="custom-renderer.html">
+<link rel="import" href="editable-behavior.html">
 <dom-module id="polymer-table-row">
   <template>
     <style>
 
       .row:hover{
         background-color:var(--highlight-color);
+      }
+
+      .editInput {
+        background-color:red;
       }
 
       .row {
@@ -75,10 +80,10 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     <template is="dom-repeat" items="[[columns]]">
       <template is="dom-if" if="[[isCustom(item.renderAs)]]">
         <div class$="[[computeClass(item.flex)]]" style$="[[computeStyle(item.width)]]">
-        <custom-renderer render-as="[[item.renderAs]]" data="[[getValue(data,item.key)]]"></custom-renderer>
+        <custom-renderer on-custom-edit="editCell" render-as="[[item.renderAs]]" data="[[getValue(data,item.key)]]"></custom-renderer>
       </div>
       </template>
-        <div style$="[[computeStyle(item.width)]]" hidden="[[isCustom(item.renderAs)]]" class$="[[computeClass(item.flex)]]" column$="[[item.key]]" on-tap="tapCell"><span style="padding-right:4px;">[[getValue(data,item.key)]]</span></div>
+        <div style$="[[computeStyle(item.width)]]" hidden="[[isCustom(item.renderAs)]]" class$="[[computeClass(item.flex)]]" column$="[[item.key]]" on-tap="tapCell" on-dblclick="editCell"><span style="padding-right:4px;">[[getValue(data,item.key)]]</span></div>
     </template>
       <template restamp="true" is="dom-if" if="[[showActions]]">
     <div class="actions">
@@ -94,6 +99,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     'use strict';
 
     Polymer({
+      behaviors:[],
       computeClass:function(flex) {
           if (flex) {return "cell cellFlex"}
           else {return "cell"}
@@ -142,19 +148,25 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       },
       actionTap:function(e) {
         e.stopPropagation();
-        this.fire("action-tap",{action:e.model.action,item:e.model.item})
+        this.fire("action-tap",{action:e.model.action,index:this.index,item:this.data})
       },
       is: 'polymer-table-row',
       tap:function(e) {
-          this.fire("select")
+          this.fire("select",{
+            ctrl:e.detail.sourceEvent.ctrlKey,
+            alt:e.detail.sourceEvent.altKey,
+            shift:e.detail.sourceEvent.shiftKey,})
           },
+
 
       dataChanged:function() {
 
       },
+      behaviors:[Editable],
       properties: {
+
         showRowIndex:{value:false},
-        index:{},
+        index:{reflectToAttribute:true},
         data:{observer:"dataChanged"},
         columns:{},
         selected:{reflectToAttribute:true}

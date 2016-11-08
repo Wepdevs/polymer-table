@@ -1,0 +1,80 @@
+<script>
+    MultiSelect = {
+      ready:function() {
+        document.addEventListener("click",function(e) {
+          if (!Polymer.dom(e).rootTarget.classList.contains("polymer-table-row") && !Polymer.dom(e).rootTarget.classList.contains("polymer-table")) {
+            this.disableSelection();
+            this.currentSelectedItem=undefined
+          }
+        }.bind(this));
+      },
+
+      selectRow:function(e) {
+        e.stopPropagation();
+        if (e.detail) {
+        if (!e.detail.alt && !e.detail.shift) {
+          this.disableAllSelections();
+          this.set("first",-1);
+          this.set("second",-1);
+        }
+        if (this.selectedItems.length==0) {
+          if (this.first==-1) {
+            this.set("first",e.model.index);
+          }
+          this.push("selectedItems",e.model.rowData);}
+          e.target.selected=true;
+          this.set("currentSelectedItem",e.model.rowData);
+
+        if (e.detail.alt) {
+          if (this.selectedItems.indexOf(e.model.rowData)==-1){
+            e.target.selected=true;
+            this.push("selectedItems",e.model.rowData);
+        } else {
+            e.target.selected=false;
+            this.arrayDelete("selectedItems",e.model.rowData);
+        }
+        }
+
+        if (e.detail.shift) {
+          if (this.first==-1) {
+            this.set("first",e.model.index);
+            this.disableAllSelections();
+          }
+          else {
+            this.disableAllSelections();
+            this.set("second",e.model.index);
+          }
+            this.set("selectedItems",this.getShiftSelection());
+        }
+        this.notifyPath("selectedItems",this.selectedItems.slice());
+      }
+      },
+      disableAllSelections:function() {
+        var n=this.querySelectorAll("polymer-table-row[selected]")
+        if (n.length>0) Array.from(n).map(x=> x.selected=false);
+        this.selectedItems=[];
+        this.set("currentSelectedItem",undefined);
+      },
+      getShiftSelection:function() {
+        var selec=[];
+        if (this.first!=-1 && this.second!=-1){
+        var range=([this.first,this.second].sort(function(a,b) {return a-b}));
+        var indexes = [];
+
+        for (var i=range[0];i<=range[1];i++) {
+          selec.push(this.paginatedData[i]);
+          this.$$("polymer-table-row[index='"+i+"']").selected=true;
+        }
+        }
+        return selec;
+      },
+      properties: {
+        first:{value:-1},
+        second:{value:-1}
+
+      },
+
+
+
+    };
+</script>

@@ -1,0 +1,48 @@
+<script>
+    Editable = {
+      editCell:function(e) {
+        e.stopPropagation();
+        this.editingRow=this.index
+        this.editingColumn = e.currentTarget.getAttribute("column");
+        var w = (e.currentTarget.getBoundingClientRect().width);
+        var h = (e.currentTarget.getBoundingClientRect().height);
+        var inp = document.createElement("input");
+        console.log(e.currentTarget); //custom-renderer??
+        this.toggleAttribute("hidden",true,e.currentTarget.firstChild);
+        inp.className = 'editInput';
+        inp.style.width=w-8+"px";
+        inp.style.height=h-8+"px";
+        inp.addEventListener("blur",this.blurOut.bind(this))
+        inp.addEventListener("keyup",this.keyUp.bind(this))
+        this.target =e.currentTarget.firstChild;
+        inp.value=this.data[this.editingColumn]
+        e.currentTarget.appendChild(inp);
+        inp.focus();
+      },
+      keyUp:function(e){
+        e.stopPropagation();
+        e.preventDefault();
+          if (e.keyCode==13) {
+            console.log("commit");
+            this.fire("commit",{value:this.querySelector(".editInput").value,index:this.editingRow,column:this.editingColumn});
+            this.toggleAttribute("hidden",false,this.target);
+            this.set("data."+this.editingColumn,+this.querySelector(".editInput").value);
+            var inp = this.querySelector(".editInput");
+            inp.blur();
+            this.notifyPath("data",JSON.parse(JSON.stringify(this.data)));
+          }
+          if (e.keyCode==27) {
+            var inp = this.querySelector(".editInput");
+            inp.blur();
+          }
+      },
+      blurOut:function(){
+        this.toggleAttribute("hidden",false,this.target);
+        var inp = this.querySelector(".editInput");
+        this.target.parentNode.removeChild(inp)
+      },
+      properties: {
+        target:{}
+      },
+    };
+</script>

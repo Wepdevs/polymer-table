@@ -29,8 +29,13 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
             var p = document.createElement(e);
             this.appendChild(p);
             this.child=p;
+            p.addEventListener("dblclick",this.edit.bind(this));
+
 
         }
+      },
+      edit:function(e) {
+        this.fire("custom-edit")
       },
       dataChanged:function(e) {
         if (this.child) {this.child.data=e;}
